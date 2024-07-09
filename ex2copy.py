@@ -1,7 +1,7 @@
 import os
 from google.cloud import speech_v1p1beta1 as speech
 import io
-from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, AudioFileClip
+from moviepy.editor import ImageClip, concatenate_videoclips, TextClip, CompositeVideoClip, AudioFileClip, VideoFileClip
 from pydub import AudioSegment
 
 def transcribe_audio_with_timing(audio_path):
@@ -40,7 +40,7 @@ def wrap_text(text, max_chars_per_line):
     import textwrap
     return "\n".join(textwrap.wrap(text, width=max_chars_per_line))
 
-def create_subtitle_clips(video, words_info, fontsize=50, font='나눔명조', color='black', max_chars_per_line=40):
+def create_subtitle_clips(video, words_info, fontsize=10, font='나눔고딕-Bold', color='HotPink', max_chars_per_line=40):
     subtitle_clips = []
     chunk_size = 5
 
@@ -75,16 +75,29 @@ def concatenate_audios(audio_paths, output_path):
         combined += audio
     combined.export(output_path, format="wav")
 
+def create_image_sequence_video(image_paths, durations, output_path, fps=24):
+    clips = []
+    for image_path, duration in zip(image_paths, durations):
+        clip = ImageClip(image_path, duration=duration)
+        clips.append(clip)
+    video = concatenate_videoclips(clips, method="compose")
+    video.write_videofile(output_path, fps=fps, codec="libx264")
+
 # 파일 경로
-video_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/video.MP4'
 audio_paths = [
     '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/sentence_0.mp3',
     '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/sentence_1.mp3',
     '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/sentence_2.mp3'
 ]
+image_paths = [
+    '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/image/1.jpeg',
+    '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/image/2.jpeg',
+    '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/image/3.jpeg'
+]
 combined_audio_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/combined_audio.wav'
+video_output_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/generated_video.mp4'
 output_directory = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource'
-output_path = os.path.join(output_directory, 'output.mp4')
+final_output_path = os.path.join(output_directory, 'final_output.mp4')
 
 # FFMPEG 경로 설정
 os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/local/bin/ffmpeg"
@@ -93,8 +106,14 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/chung-guyeon/ssh/kkokkomu
 # 여러 개의 오디오 파일을 하나로 결합
 concatenate_audios(audio_paths, combined_audio_path)
 
-# 비디오와 오디오 클립 불러오기
-video = VideoFileClip(video_path)
+# 각 오디오 파일의 길이를 가져옴
+durations = [AudioSegment.from_file(path).duration_seconds for path in audio_paths]
+
+# 이미지 시퀀스를 사용하여 비디오 생성
+create_image_sequence_video(image_paths, durations, video_output_path)
+
+# 생성된 비디오와 오디오 클립 불러오기
+video = VideoFileClip(video_output_path)
 audio = AudioFileClip(combined_audio_path)
 
 video = video.set_audio(audio)
@@ -109,7 +128,7 @@ subtitle_clips = create_subtitle_clips(video, words_info)
 final_video = CompositeVideoClip([video, *subtitle_clips])
 
 # 결과물 저장
-final_video.write_videofile(output_path, codec='libx264', audio_codec='aac', fps=24)
+final_video.write_videofile(final_output_path, codec='libx264', audio_codec='aac', fps=24)
 
 # 저장된 결과물의 자막 정보 출력
 for word_info in words_info:
