@@ -69,7 +69,7 @@ def convert_mp3_to_wav(mp3_path, wav_path):
     audio.export(wav_path, format="wav")
 
 # 파일 경로
-video_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/video.mp4'
+video_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/video.MP4'
 audio_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/tts.mp3'
 wav_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/audio.wav'
 output_directory = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource'
