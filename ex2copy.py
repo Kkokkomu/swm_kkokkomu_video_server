@@ -68,10 +68,21 @@ def convert_mp3_to_wav(mp3_path, wav_path):
     audio = AudioSegment.from_mp3(mp3_path)
     audio.export(wav_path, format="wav")
 
+def concatenate_audios(audio_paths, output_path):
+    combined = AudioSegment.empty()
+    for path in audio_paths:
+        audio = AudioSegment.from_file(path)
+        combined += audio
+    combined.export(output_path, format="wav")
+
 # 파일 경로
 video_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/video.MP4'
-audio_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/tts.mp3'
-wav_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/audio.wav'
+audio_paths = [
+    '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/sentence_0.mp3',
+    '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/sentence_1.mp3',
+    '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/sentence_2.mp3'
+]
+combined_audio_path = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource/combined_audio.wav'
 output_directory = '/Users/chung-guyeon/gouyeonch/swm/swm_kkokkomu_video_server/resource'
 output_path = os.path.join(output_directory, 'output.mp4')
 
@@ -79,17 +90,17 @@ output_path = os.path.join(output_directory, 'output.mp4')
 os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/local/bin/ffmpeg"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/chung-guyeon/ssh/kkokkomu-mvp-stt-6b87122202e7.json"
 
-# mp3 파일을 wav 파일로 변환
-convert_mp3_to_wav(audio_path, wav_path)
+# 여러 개의 오디오 파일을 하나로 결합
+concatenate_audios(audio_paths, combined_audio_path)
 
 # 비디오와 오디오 클립 불러오기
 video = VideoFileClip(video_path)
-audio = AudioFileClip(audio_path)
+audio = AudioFileClip(combined_audio_path)
 
 video = video.set_audio(audio)
 
-# 음성 파일로부터 단어 타이밍 정보 추출
-words_info = transcribe_audio_with_timing(wav_path)
+# 결합된 음성 파일로부터 단어 타이밍 정보 추출
+words_info = transcribe_audio_with_timing(combined_audio_path)
 
 # 단어 타이밍 정보로부터 자막 클립 생성
 subtitle_clips = create_subtitle_clips(video, words_info)
